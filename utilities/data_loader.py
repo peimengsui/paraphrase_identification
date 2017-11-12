@@ -67,7 +67,7 @@ def batch_iter(dataset, batch_size):
             question.extend([1]*(max_length-len(question)))
         for question in question_2:
             question.extend([1]*(max_length-len(question)))
-        yield [np.array(judgement), np.array(question_1), np.array(question_2)]
+        yield [judgement, question_1, question_2]
 
 
 if __name__ == '__main__':
