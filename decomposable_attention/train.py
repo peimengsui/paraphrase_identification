@@ -12,10 +12,11 @@ from utilities.data_loader import *
 import model
 
 
-hidden_size = 100
+hidden_size = 200
 learning_rate = 0.05
 batch_size = 64
 weight_decay = 5e-5
+max_grad_norm = 5.0
 
 
 def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100):
@@ -53,7 +54,7 @@ def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100):
 def train(max_batch):
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
-    training_set = load_data(data_dir + '/train.tsv', word_to_index_map)[:1600]  # subset for faster test
+    training_set = load_data(data_dir + '/train.tsv', word_to_index_map)  # subset for faster test
     train_iter = batch_iter(training_set, batch_size)
 
     dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)
@@ -100,16 +101,49 @@ def train(max_batch):
         loss = criterion(prob, judgement_var)
         losses.append(loss.data[0])
         loss.backward()
-        
+
         input_optimizer.step()
         inter_atten_optimizer.step()
 
         if (i + 1) % 100 == 0:
+            grad_norm = 0.
+            para_norm = 0.
+
+            for m in input_encoder.modules():
+                if isinstance(m, nn.Linear):
+                    grad_norm += m.weight.grad.data.norm() ** 2
+                    para_norm += m.weight.data.norm() ** 2
+                    if m.bias is not None:
+                        grad_norm += m.bias.grad.data.norm() ** 2
+                        para_norm += m.bias.data.norm() ** 2
+
+            for m in inter_atten.modules():
+                if isinstance(m, nn.Linear):
+                    grad_norm += m.weight.grad.data.norm() ** 2
+                    para_norm += m.weight.data.norm() ** 2
+                    if m.bias is not None:
+                        grad_norm += m.bias.grad.data.norm() ** 2
+                        para_norm += m.bias.data.norm() ** 2
+
+            grad_norm ** 0.5
+            para_norm ** 0.5
+
+            shrinkage = max_grad_norm / (grad_norm+1e-6)
+            if shrinkage < 1:
+                for m in input_encoder.modules():
+                    if isinstance(m, nn.Linear):
+                        m.weight.grad.data = m.weight.grad.data * shrinkage
+                for m in inter_atten.modules():
+                    if isinstance(m, nn.Linear):
+                        m.weight.grad.data = m.weight.grad.data * shrinkage
+                        m.bias.grad.data = m.bias.grad.data * shrinkage
+
             train_acc = test_model(train_iter, input_encoder, inter_atten, use_cuda)
             dev_acc = test_model(dev_iter, input_encoder, inter_atten, use_cuda)
             
-            print('batches %d, train-loss %.3f, train-acc %.3f, dev-acc %.3f' %
-                  (i + 1, sum(losses) / len(losses), train_acc, dev_acc))
+            print('batches %d, train-loss %.3f, train-acc %.3f, dev-acc %.3f, grad-norm %.3f, para-norm %.3f' %
+                  (i + 1, sum(losses) / len(losses), train_acc, dev_acc, grad_norm, para_norm))
+
             losses = []
 
         if i == max_batch:
