@@ -17,8 +17,8 @@ class baseline(nn.Module):
         self.linear.weight.data.normal_(0, 0.01)
         if addBias:
             self.linear.bias.data.uniform_(-0.01, 0.01)
-        self.final = nn.Linear(self.hidden_size, num_class)
-        self.log_prob = nn.Logsoftmax()
+        self.final = nn.Linear(self.hidden_size * 2, num_class)
+        self.log_prob = nn.LogSoftmax()
         
     def forward(self, sent1, sent2):
         batch_size = sent1.size(0)
@@ -31,6 +31,7 @@ class baseline(nn.Module):
         sent2 = self.linear(sent2).view(batch_size, -1, self.hidden_size)
         sent2 = F.relu(sent2)
         ret = self.final(torch.cat((sent1, sent2), 2))
+        ret = torch.sum(ret, 1)
         log_prob = self.log_prob(ret)
         return log_prob
         
