@@ -1,3 +1,6 @@
 **/.DS_Store
 *.tsv
 *.txt
+__pycache__/
+.ipynb_checkpoints/
+*.ipynb
