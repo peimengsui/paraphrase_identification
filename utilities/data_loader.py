@@ -2,7 +2,11 @@ import numpy as np
 import random
 
 
-def load_data(path):
+UNKNOWN = '<UNK>'  # 0
+PADDING = '<PAD>'  # 1
+
+
+def load_data(path, word_to_index_map):
     data = []
     with open(path, encoding='utf-8') as f:
         for i, line in enumerate(f):
@@ -11,14 +15,16 @@ def load_data(path):
             example['judgement'] = int(text[0])
             example['question_1'] = text[1]
             example['question_2'] = text[2]
+            example['question_1_tokens'] = [word_to_index_map[word] if word in word_to_index_map.keys() else 0
+                                            for word in example['question_1'].split(' ')]
+            example['question_2_tokens'] = [word_to_index_map[word] if word in word_to_index_map.keys() else 0
+                                            for word in example['question_2'].split(' ')]
             example['pair_id'] = text[3]
             data.append(example)
     return data
 
 
 def load_embed(path):
-    PADDING = "<PAD>"
-    UNKNOWN = "<UNK>"
     vocabulary = [UNKNOWN, PADDING]
     word_embeddings = [list(np.random.randn(300)), list(np.random.randn(300))]
     word_to_index_map = {UNKNOWN: 0, PADDING: 1}
@@ -35,7 +41,7 @@ def load_embed(path):
     return vocabulary, np.array(word_embeddings), word_to_index_map, index_to_word_map
 
 
-def batch_iter(dataset, batch_size, word_to_index_map):
+def batch_iter(dataset, batch_size):
     start = -1 * batch_size
     dataset_size = len(dataset)
     order = list(range(dataset_size))
@@ -54,16 +60,21 @@ def batch_iter(dataset, batch_size, word_to_index_map):
         batch = [dataset[index] for index in batch_indices]
         for k in batch:
             judgement.append(k['judgement'])
-            question_1.append([word_to_index_map[word] for word in k['question_1'].split(' ')])
-            question_2.append([word_to_index_map[word] for word in k['question_2'].split(' ')])
-        yield [judgement, question_1, question_2]
+            question_1.append(k['question_1_tokens'])
+            question_2.append(k['question_2_tokens'])
+        max_length = max([len(question) for question in question_1] + [len(question) for question in question_2])
+        for question in question_1:
+            question.extend([1]*(max_length-len(question)))
+        for question in question_2:
+            question.extend([1]*(max_length-len(question)))
+        yield [np.array(judgement), np.array(question_1), np.array(question_2)]
 
 
 if __name__ == '__main__':
     data_dir = '../data'
-    training_set = load_data(data_dir + '/train.tsv')[:100]  # subset for faster test
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
-    x = batch_iter(training_set, 1, word_to_index_map)
+    training_set = load_data(data_dir + '/dev.tsv', word_to_index_map)  # use dev set for faster test
+    x = batch_iter(training_set, 2)
     for item in x:
         print(item)
         print([index_to_word_map[x] for x in item[1][0]])
