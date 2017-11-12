@@ -79,6 +79,7 @@ def train(max_batch):
     criterion = nn.BCELoss()
 
     losses = []
+    best_acc = 0
 
     for i, (judgement, question_1, question_2) in enumerate(train_iter):
         input_encoder.train()
@@ -145,6 +146,11 @@ def train(max_batch):
                   (i + 1, sum(losses) / len(losses), train_acc, dev_acc, grad_norm, para_norm))
 
             losses = []
+
+            if dev_acc > best_acc:
+                best_acc = dev_acc
+                torch.save(input_encoder.state_dict(), 'input_encoder.pt')
+                torch.save(inter_atten.state_dict(), 'inter_atten.pt')
 
         if i == max_batch:
             return
