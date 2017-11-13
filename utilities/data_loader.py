@@ -6,7 +6,7 @@ UNKNOWN = '<UNK>'  # 0
 PADDING = '<PAD>'  # 1
 
 
-def load_data(path, word_to_index_map):
+def load_data(path, word_to_index_map, add_reversed=False):
     data = []
     with open(path, encoding='utf-8') as f:
         for i, line in enumerate(f):
@@ -21,6 +21,18 @@ def load_data(path, word_to_index_map):
                                             for word in example['question_2'].split(' ')]
             example['pair_id'] = text[3]
             data.append(example)
+            if add_reversed:
+                example = {}
+                text = line.strip().lower().split('\t')
+                example['judgement'] = int(text[0])
+                example['question_1'] = text[2]  # reverse q1 and q2
+                example['question_2'] = text[1]
+                example['question_1_tokens'] = [word_to_index_map[word] if word in word_to_index_map.keys() else 0
+                                                for word in example['question_1'].split(' ')]
+                example['question_2_tokens'] = [word_to_index_map[word] if word in word_to_index_map.keys() else 0
+                                                for word in example['question_2'].split(' ')]
+                example['pair_id'] = text[3]
+                data.append(example)
     return data
 
 
