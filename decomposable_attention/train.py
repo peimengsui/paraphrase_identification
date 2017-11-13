@@ -10,45 +10,13 @@ import torch.optim as optim
 
 from utilities.data_loader import *
 import model
-
+from eval import test_model
 
 hidden_size = 200
 learning_rate = 0.01
 batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
-
-
-def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100):
-    correct = 0
-    total = 0
-    input_encoder.eval()
-    inter_atten.eval()
-
-    for _ in range(100):
-        judgement, question_1, question_2 = next(loader)
-        
-        if use_cuda:
-            question_1_var = Variable(torch.LongTensor(question_1).cuda())
-            question_2_var = Variable(torch.LongTensor(question_2).cuda())
-            judgement_var = Variable(torch.FloatTensor(judgement).cuda())
-        else:
-            question_1_var = Variable(torch.LongTensor(question_1))
-            question_2_var = Variable(torch.LongTensor(question_2))
-            judgement_var = Variable(torch.FloatTensor(judgement))
-
-        embed_1, embed_2 = input_encoder(question_1_var, question_2_var)
-        prob = inter_atten(embed_1, embed_2).squeeze()
-
-        predict = np.array(prob.cpu().data.numpy() > 0.5, dtype=np.int0)
-        labet = np.array(judgement, dtype=np.int0)
-        total += len(judgement)
-        correct += np.sum(predict == labet)
-            
-    input_encoder.train()
-    inter_atten.train()
-
-    return (correct / total)
 
 
 def train(max_batch):
