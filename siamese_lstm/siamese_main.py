@@ -17,9 +17,9 @@ training_set = data_loader.load_data(data_dir+'/train.tsv', word_to_index_map)
 valid_set = data_loader.load_data(data_dir+'/dev.tsv', word_to_index_map)
 test_set = data_loader.load_data(data_dir+'/test.tsv', word_to_index_map)
 
-train_loader = data_loader.batch_iter(training_set, 32)
-valid_loader = data_loader.batch_iter(valid_set, 32)
-test_loader = data_loader.batch_iter(test_set, 1)
+train_loader = data_loader.batch_iter(training_set, 50)
+valid_loader = data_loader.batch_iter(valid_set, 50)
+test_loader = data_loader.batch_iter(test_set, 50)
 
 def test(batch_size, model, data_iter, criterion, test_set, epoch):
     step = 1
@@ -43,8 +43,7 @@ def test(batch_size, model, data_iter, criterion, test_set, epoch):
         losses.append(loss.data[0])
         if step % total_batches == 0:
             print( "Epoch:", (epoch), "Avg test Loss:", np.mean(losses), "Test Accuracy:", correct/(batch_size*total_batches))
-            correct = 0
-            return 
+            return correct/(batch_size*total_batches) 
         step += 1
 
 def training_loop(batch_size, model, optim, train_loader, valid_loader, num_epochs, criterion, training_set, valid_set):
@@ -90,10 +89,10 @@ if torch.cuda.is_available():
 para1 = filter(lambda p: p.requires_grad, model.parameters())
 optim = opt.Adam(para1)
 criterion = torch.nn.BCELoss()
-training_loop(32, model, optim, train_loader, valid_loader, num_epochs, criterion, training_set, valid_set)
-
+training_loop(50, model, optim, train_loader, valid_loader, num_epochs, criterion, training_set, valid_set)
+print('Final Accuracy Result on Test Dataset /n')
 model = Siamese(word_embeddings)
-model.load_state_dict(torch.load(best_siamese.pt))
+model.load_state_dict(torch.load('best_siamese.pt'))
 if torch.cuda.is_available():
     model.cuda()
-test(1, model, test_loader, criterion, test_set, num_epochs)
+test(50, model, test_loader, criterion, test_set, num_epochs)
