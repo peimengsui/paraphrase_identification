@@ -13,7 +13,7 @@ import model
 
 
 hidden_size = 200
-learning_rate = 0.05
+learning_rate = 0.01
 batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
