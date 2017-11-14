@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
 
-from utilities.data_loader import *
+from utilities.data_loader import load_data, load_embed, batch_iter
 import model
 from eval import test_model
 
@@ -22,7 +22,7 @@ max_grad_norm = 5.0
 def train(max_batch):
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
-    training_set = load_data(data_dir + '/train.tsv', word_to_index_map)  # subset for faster test
+    training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True)  # subset for faster test
     train_iter = batch_iter(training_set, batch_size)
 
     dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)
@@ -44,7 +44,7 @@ def train(max_batch):
     input_optimizer = optim.Adagrad(para1, lr=learning_rate, weight_decay=weight_decay)
     inter_atten_optimizer = optim.Adagrad(para2, lr=learning_rate, weight_decay=weight_decay)
 
-    criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     losses = []
     best_acc = 0
@@ -66,8 +66,8 @@ def train(max_batch):
         inter_atten.zero_grad()
 
         embed_1, embed_2 = input_encoder(question_1_var, question_2_var)  # batch_size * length * embedding_dim
-        prob = inter_atten(embed_1, embed_2).squeeze()
-        loss = criterion(prob, judgement_var)
+        logits, _ = inter_atten(embed_1, embed_2)
+        loss = criterion(logits, judgement_var)
         losses.append(loss.data[0])
         loss.backward()
 

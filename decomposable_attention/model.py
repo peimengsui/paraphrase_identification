@@ -61,7 +61,7 @@ class atten(nn.Module):
         self.final_linear = nn.Linear(
             self.hidden_size, self.label_size, bias=True)
 
-        self.log_prob = nn.Sigmoid()
+        self.sigmoid = nn.Sigmoid()
 
         '''initialize parameters'''
         for m in self.modules():
@@ -144,6 +144,6 @@ class atten(nn.Module):
         # print 'final layer'
         # print h.data
 
-        log_prob = self.log_prob(h)
+        prob = self.sigmoid(h)
 
-        return log_prob
+        return h.squeeze(), prob.squeeze()

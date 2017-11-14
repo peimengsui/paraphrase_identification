@@ -7,8 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
+import numpy as np
 
-from utilities.data_loader import *
+from utilities.data_loader import load_data, load_embed, batch_iter
 import model
 
 
@@ -18,8 +19,8 @@ batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
 resume = True
-path_encoder = 'input_encoder_171113.pt'
-path_atten = 'inter_atten_171113.pt'
+path_encoder = 'input_encoder.pt'
+path_atten = 'inter_atten.pt'
 threshould = 0.5
 
 
@@ -42,7 +43,7 @@ def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100, thre
             judgement_var = Variable(torch.FloatTensor(judgement))
 
         embed_1, embed_2 = input_encoder(question_1_var, question_2_var)
-        prob = inter_atten(embed_1, embed_2).squeeze()
+        _, prob = inter_atten(embed_1, embed_2)
 
         predict = np.array(prob.cpu().data.numpy() > threshould, dtype=np.int0)
         label = np.array(judgement, dtype=np.int0)
