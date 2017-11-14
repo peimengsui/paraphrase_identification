@@ -2,6 +2,8 @@ import sys
 import os
 sys.path.append(os.pardir)
 
+from datetime import datetime
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,13 +15,15 @@ import model
 from eval import test_model
 
 hidden_size = 200
-learning_rate = 0.01
+learning_rate = 0.001
 batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
 
 
 def train(max_batch):
+    start_time = datetime.now().strftime(r'%m_%d_%H_%M_%S')
+
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
     training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True)  # subset for faster test
@@ -41,8 +45,10 @@ def train(max_batch):
     para1 = list(filter(lambda p: p.requires_grad, input_encoder.parameters()))
     para2 = list(inter_atten.parameters())
 
-    input_optimizer = optim.Adagrad(para1, lr=learning_rate, weight_decay=weight_decay)
-    inter_atten_optimizer = optim.Adagrad(para2, lr=learning_rate, weight_decay=weight_decay)
+    # input_optimizer = optim.Adagrad(para1, lr=learning_rate, weight_decay=weight_decay)
+    # inter_atten_optimizer = optim.Adagrad(para2, lr=learning_rate, weight_decay=weight_decay)
+    input_optimizer = optim.Adam(para1, lr=learning_rate)
+    inter_atten_optimizer = optim.Adam(para2, lr=learning_rate)
 
     criterion = nn.BCEWithLogitsLoss()
 
@@ -117,8 +123,8 @@ def train(max_batch):
 
             if dev_acc > best_acc:
                 best_acc = dev_acc
-                torch.save(input_encoder.state_dict(), 'input_encoder.pt')
-                torch.save(inter_atten.state_dict(), 'inter_atten.pt')
+                torch.save(input_encoder.state_dict(), 'input_encoder'+start_time+'.pt')
+                torch.save(inter_atten.state_dict(), 'inter_atten'+start_time+'.pt')
 
         if i == max_batch:
             return
