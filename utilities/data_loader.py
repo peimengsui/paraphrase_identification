@@ -53,11 +53,12 @@ def load_embed(path):
     return vocabulary, np.array(word_embeddings), word_to_index_map, index_to_word_map
 
 
-def batch_iter(dataset, batch_size):
+def batch_iter(dataset, batch_size, shuffle=True):
     start = -1 * batch_size
     dataset_size = len(dataset)
     order = list(range(dataset_size))
-    random.shuffle(order)
+    if shuffle:
+        random.shuffle(order)
 
     while True:
         start += batch_size
@@ -67,7 +68,8 @@ def batch_iter(dataset, batch_size):
         if start > dataset_size - batch_size:
             # Start another epoch.
             start = 0
-            random.shuffle(order)
+            if shuffle:
+                random.shuffle(order)
         batch_indices = order[start:start + batch_size]
         batch = [dataset[index] for index in batch_indices]
         for k in batch:

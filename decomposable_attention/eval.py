@@ -19,8 +19,9 @@ batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
 resume = True
-path_encoder = 'input_encoder.pt'
-path_atten = 'inter_atten.pt'
+start_time = '11_15_14_26_57'
+path_encoder = 'input_encoder'+start_time+'.pt'
+path_atten = 'inter_atten'+start_time+'.pt'
 threshould = 0.5
 
 
