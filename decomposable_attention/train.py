@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
 
-from utilities.data_loader import load_data, load_embed, batch_iter
+from utilities.data_loader import load_data, load_embed, batch_iter, add_char_ngrams
 import model
 from eval import test_model
 
@@ -22,6 +22,7 @@ batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
 threshould = 0.5
+use_ngram = True
 
 
 def train(max_batch):
@@ -30,18 +31,29 @@ def train(max_batch):
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
     word_embeddings = (word_embeddings.T / np.linalg.norm(word_embeddings, axis=1)).T
-    training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True)  # subset for faster test
-    train_iter = batch_iter(training_set, batch_size)
+    training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True, n=5)
+    print('training set loaded')
+    if use_ngram:
+        training_set, ngram_to_index_map, index_to_ngram_map = add_char_ngrams(training_set, build_ngram_map=True, ngram_to_index_map=None)
+        print('training set ngrams added')
+    train_iter = batch_iter(training_set, batch_size, use_ngram)
 
     dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)
-    dev_iter = batch_iter(dev_set, 100)
+    if use_ngram:
+        dev_set = add_char_ngrams(training_set, build_ngram_map=False, ngram_to_index_map=ngram_to_index_map)
+        print('dev set ngrams added')
+    dev_iter = batch_iter(dev_set, 100, use_ngram)
 
     use_cuda = torch.cuda.is_available()
 
-    input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
-    input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
-    input_encoder.embedding.weight.requires_grad = False
+    if use_ngram:
+        input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+    else:
+        input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+        input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
+        input_encoder.embedding.weight.requires_grad = False
     inter_atten = model.atten(hidden_size=hidden_size, label_size=1, para_init=0.01)
+
     if use_cuda:
         input_encoder.cuda()
         inter_atten.cuda()

@@ -42,6 +42,44 @@ class encoder(nn.Module):
         return sent1_linear, sent2_linear
 
 
+class encoder_char(nn.Module):
+
+    def __init__(self, num_embeddings, embedding_size, hidden_size, para_init, padding_index):
+        super(encoder_char, self).__init__()
+
+        self.num_embeddings = num_embeddings
+        self.embedding_size = embedding_size
+        self.hidden_size = hidden_size
+        self.para_init = para_init
+        self.padding_index = padding_index
+
+        self.embedding = nn.Embedding(self.num_embeddings, self.embedding_size, self.padding_index)
+        self.input_linear = nn.Linear(
+            self.embedding_size, self.hidden_size, bias=False)  # linear transformation
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, self.para_init)
+                # m.bias.data.uniform_(-0.01, 0.01)
+
+    def forward(self, sent1, sent2):
+        '''
+               sent: batch_size x length (Long tensor)
+        '''
+        batch_size, question_len, ngram_len = sent1.size()
+        sent1 = self.embedding(sent1.view(batch_size, -1))
+        sent2 = self.embedding(sent2.view(batch_size, -1))
+
+        sent1 = sent1.view(batch_size, question_len, ngram_len, self.embedding_size).sum(dim=2)
+        sent2 = sent2.view(batch_size, question_len, ngram_len, self.embedding_size).sum(dim=2)
+
+        sent1_linear = self.input_linear(sent1).view(
+            batch_size, -1, self.hidden_size)
+        sent2_linear = self.input_linear(sent2).view(
+            batch_size, -1, self.hidden_size)
+
+        return sent1_linear, sent2_linear
+
+
 class atten(nn.Module):
     '''
         intra sentence attention
