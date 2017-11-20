@@ -147,6 +147,7 @@ def train(max_batch):
            
             print('batches %d, train-loss %.3f, train-acc %.3f, dev-acc %.3f, best-dev-acc %.3f, grad-norm %.3f, para-norm %.3f' %
                   (i + 1, sum(losses) / len(losses), correct / total, dev_acc, best_acc, grad_norm, para_norm))
+            sys.stdout.flush()
 
             losses = []
             total = 0
