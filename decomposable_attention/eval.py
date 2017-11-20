@@ -25,7 +25,7 @@ path_atten = 'inter_atten'+start_time+'.pt'
 threshould = 0.5
 
 
-def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100, threshould=0.5):
+def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=1000, threshould=0.5):
     correct = 0
     total = 0
     input_encoder.eval()
@@ -35,21 +35,23 @@ def test_model(loader, input_encoder, inter_atten, use_cuda, num_batch=100, thre
         judgement, question_1, question_2 = next(loader)
         
         if use_cuda:
-            question_1_var = Variable(torch.LongTensor(question_1).cuda())
-            question_2_var = Variable(torch.LongTensor(question_2).cuda())
-            judgement_var = Variable(torch.FloatTensor(judgement).cuda())
+            question_1_var = Variable(torch.LongTensor(question_1).cuda(), volatile=True)
+            question_2_var = Variable(torch.LongTensor(question_2).cuda(), volatile=True)
+            judgement_var = Variable(torch.FloatTensor(judgement).cuda(), volatile=True)
         else:
-            question_1_var = Variable(torch.LongTensor(question_1))
-            question_2_var = Variable(torch.LongTensor(question_2))
-            judgement_var = Variable(torch.FloatTensor(judgement))
+            question_1_var = Variable(torch.LongTensor(question_1), volatile=True)
+            question_2_var = Variable(torch.LongTensor(question_2), volatile=True)
+            judgement_var = Variable(torch.FloatTensor(judgement), volatile=True)
 
         embed_1, embed_2 = input_encoder(question_1_var, question_2_var)
-        _, prob = inter_atten(embed_1, embed_2)
+        prob = inter_atten(embed_1, embed_2)[1].cpu().data.numpy()
 
-        predict = np.array(prob.cpu().data.numpy() > threshould, dtype=np.int0)
+        predict = np.array(prob > threshould, dtype=np.int0)
         label = np.array(judgement, dtype=np.int0)
         total += len(judgement)
         correct += np.sum(predict == label)
+
+        del embed_1, embed_2, prob
             
     input_encoder.train()
     inter_atten.train()
@@ -64,10 +66,10 @@ def eval():
     train_iter = batch_iter(training_set, batch_size)
 
     dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)
-    dev_iter = batch_iter(dev_set, 100)
+    dev_iter = batch_iter(dev_set, 10)
 
     test_set = load_data(data_dir + '/test.tsv', word_to_index_map)
-    test_iter = batch_iter(test_set, 100)
+    test_iter = batch_iter(test_set, 10)
 
     use_cuda = torch.cuda.is_available()
 

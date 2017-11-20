@@ -42,7 +42,7 @@ def train(max_batch):
     if use_ngram:
         dev_set = add_char_ngrams(training_set, build_ngram_map=False, ngram_to_index_map=ngram_to_index_map)
         print('dev set ngrams added')
-    dev_iter = batch_iter(dev_set, 100, use_ngram)
+    dev_iter = batch_iter(dev_set, 10, use_ngram)
 
     use_cuda = torch.cuda.is_available()
 
@@ -98,6 +98,8 @@ def train(max_batch):
         total += len(judgement)
         correct += np.sum(predict == label)
         
+        del embed_1, embed_2, logits, prob
+
         grad_norm = 0.
         para_norm = 0.
 

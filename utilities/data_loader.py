@@ -78,12 +78,12 @@ def add_char_ngrams(data, build_ngram_map=True, ngram_to_index_map=None):
         return data
 
 
-def word_to_char_ngrams(word, n=5):
+def word_to_char_ngrams(word, n=5, max_len=15):
     tmp = '#' + word + '#'
     if len(tmp) < n:
         return [tmp]
     else:
-        return [tmp[i: i+n] for i in range(len(tmp)-n+1)]
+        return [tmp[i: i+n] for i in range(min(len(tmp)-n+1, max_len-n+1))]
 
 
 def load_embed(path):
