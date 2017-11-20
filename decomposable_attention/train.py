@@ -23,6 +23,7 @@ weight_decay = 5e-5
 max_grad_norm = 5.0
 threshould = 0.5
 use_ngram = True
+use_shrinkage = False
 
 
 def train(max_batch):
@@ -123,7 +124,7 @@ def train(max_batch):
         para_norm ** 0.5
 
         shrinkage = max_grad_norm / (grad_norm+1e-6)
-        if shrinkage < 1:
+        if use_shrinkage and shrinkage < 1:
             for m in input_encoder.modules():
                 if isinstance(m, nn.Linear):
                     m.weight.grad.data = m.weight.grad.data * shrinkage
