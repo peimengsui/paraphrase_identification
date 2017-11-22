@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
 
-from utilities.data_loader import load_data, load_embed, batch_iter, add_char_ngrams
+from utilities.data_loader import load_data, load_embed, batch_iter, add_char_ngrams, load_ngram_vocab
 import model
 from eval import test_model
 
@@ -35,16 +35,23 @@ def train(max_batch):
     training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True, n=5)
     print('training set loaded')
     if use_ngram:
-        training_set, ngram_to_index_map, index_to_ngram_map = add_char_ngrams(training_set, build_ngram_map=True, ngram_to_index_map=None)
+        if os.path.isfile(data_dir + '/ngrams.txt'):
+            ngrams, ngram_to_index_map, index_to_ngram_map = load_ngram_vocab(data_dir + '/ngrams.txt')
+            training_set = add_char_ngrams(training_set, build_ngram_map=False, ngram_to_index_map=ngram_to_index_map)
+            print('read ngrams from file:', data_dir + '/ngrams.txt')
+        else:
+            training_set, ngram_to_index_map, index_to_ngram_map = add_char_ngrams(training_set, build_ngram_map=True, ngram_to_index_map=None)
         print('training set ngrams added')
     train_iter = batch_iter(training_set, batch_size, use_ngram)
 
     dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)
+    print('dev set loaded')
     if use_ngram:
         dev_set = add_char_ngrams(training_set, build_ngram_map=False, ngram_to_index_map=ngram_to_index_map)
         print('dev set ngrams added')
     dev_iter = batch_iter(dev_set, 10, use_ngram)
-
+    sys.stdout.flush()
+    
     use_cuda = torch.cuda.is_available()
 
     if use_ngram:
