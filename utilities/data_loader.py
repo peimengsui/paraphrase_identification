@@ -103,6 +103,19 @@ def load_embed(path):
     return vocabulary, np.array(word_embeddings), word_to_index_map, index_to_word_map
 
 
+def load_ngram_vocab(path):
+    ngram_to_index_map = {UNKNOWN: 0, PADDING: 1}
+    index_to_ngram_map = {0: UNKNOWN, 1: PADDING}
+    vocabulary = [UNKNOWN, PADDING]
+    with open(path, encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            ngram = line.strip()
+            vocabulary.append(ngram)
+            ngram_to_index_map[ngram] = i+2
+            index_to_ngram_map[i+2] = ngram
+    return vocabulary, ngram_to_index_map, index_to_ngram_map
+
+
 def batch_iter(dataset, batch_size, use_ngram=False, shuffle=True):
     start = -1 * batch_size
     dataset_size = len(dataset)
