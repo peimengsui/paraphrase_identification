@@ -17,7 +17,8 @@ class WordLSTM(nn.Module):
         self.embedding.weight.requires_grad = False
         self.rnn = nn.LSTM(input_size=300, 
                            hidden_size=rsize, 
-                           batch_first=True, 
+                           batch_first=True,
+                           dropout = 0.2 
                           )
 
     def forward(self, x):

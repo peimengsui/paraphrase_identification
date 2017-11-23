@@ -42,7 +42,7 @@ def test(batch_size, model, data_iter, criterion, test_set, epoch):
         loss = criterion(output, label)
         losses.append(loss.data[0])
         if step % total_batches == 0:
-            print( "Epoch:", (epoch), "Avg test Loss:", np.mean(losses), "Test Accuracy:", correct/(batch_size*total_batches))
+            print( "Epoch:", (epoch), "Avg test Loss:", np.mean(losses), "Test Accuracy:", correct/(batch_size*total_batches), flush = True)
             return correct/(batch_size*total_batches) 
         step += 1
 
@@ -72,11 +72,11 @@ def training_loop(batch_size, model, optim, train_loader, valid_loader, num_epoc
         loss.backward()
         optim.step()
         if step % total_batches == 0:
-            print( "Epoch:", (epoch), "Training Avg Loss:", np.mean(losses), "Training Accuracy:", correct/(batch_size*total_batches))
+            print( "Epoch:", (epoch), "Training Avg Loss:", np.mean(losses), "Training Accuracy:", correct/(batch_size*total_batches), flush=True)
             acc = test(batch_size, model, valid_loader, criterion, valid_set, epoch)
             if acc > best_acc:
                 best_acc = acc
-                torch.save(model.state_dict(), 'best_siamese.pt')
+                torch.save(model.state_dict(), 'best_siamese_dp.pt')
             correct = 0
             losses = []
             epoch += 1
@@ -88,11 +88,11 @@ if torch.cuda.is_available():
     model.cuda()
 para1 = filter(lambda p: p.requires_grad, model.parameters())
 optim = opt.Adam(para1)
-criterion = torch.nn.BCELoss()
+criterion = torch.nn.MSELoss()
 training_loop(50, model, optim, train_loader, valid_loader, num_epochs, criterion, training_set, valid_set)
-print('Final Accuracy Result on Test Dataset /n')
+print('Final Accuracy Result on Test Dataset', flush=True)
 model = Siamese(word_embeddings)
-model.load_state_dict(torch.load('best_siamese.pt'))
+model.load_state_dict(torch.load('best_siamese_dp.pt'))
 if torch.cuda.is_available():
     model.cuda()
 test(50, model, test_loader, criterion, test_set, num_epochs)
