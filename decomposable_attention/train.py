@@ -22,8 +22,14 @@ batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
 threshould = 0.5
-use_ngram = True
+use_ngram = False
 use_shrinkage = False
+ngram_pretrain = True
+path_encoder_pretrain = 'input_encoder_pretrain.pt'
+path_atten_pretrain = 'inter_atten_pretrain.pt'
+pretrain_embed_only = False
+pretrain = True
+output_note = 'basic'
 
 
 def train(max_batch):
@@ -56,11 +62,26 @@ def train(max_batch):
 
     if use_ngram:
         input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+        input_encoder.load_state_dict(torch.load(path_encoder_pretrain))
+        print('model resumed from', path_encoder_pretrain)
+        if pretrain_embed_only:
+            # copy pretrained embed and re-init other layers
+            word_embeddings = input_encoder.embedding.weight.cpu().data.numpy()
+            input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+            input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
+            print('use pretrained ngram embeddings')
+        if pretrain:
+            input_encoder.embedding.weight.requires_grad = False
+
     else:
         input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
         input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
         input_encoder.embedding.weight.requires_grad = False
+
     inter_atten = model.atten(hidden_size=hidden_size, label_size=1, para_init=0.01)
+    if use_ngram and not pretrain_embed_only:
+        inter_atten.load_state_dict(torch.load(path_atten_pretrain))
+        print('model resumed from', path_atten_pretrain)
 
     if use_cuda:
         input_encoder.cuda()
@@ -71,6 +92,15 @@ def train(max_batch):
 
     input_optimizer = optim.Adagrad(para1, lr=learning_rate, weight_decay=weight_decay)
     inter_atten_optimizer = optim.Adagrad(para2, lr=learning_rate, weight_decay=weight_decay)
+
+    for group in input_optimizer.param_groups:
+        for p in group['params']:
+            state = input_optimizer.state[p]
+            state['sum'] += 0.1
+    for group in inter_atten_optimizer.param_groups:
+        for p in group['params']:
+            state = inter_atten_optimizer.state[p]
+            state['sum'] += 0.1
 
     criterion = nn.BCEWithLogitsLoss()
 
@@ -149,8 +179,8 @@ def train(max_batch):
 
             if dev_acc > best_acc:
                 best_acc = dev_acc
-                torch.save(input_encoder.state_dict(), 'input_encoder'+start_time+'.pt')
-                torch.save(inter_atten.state_dict(), 'inter_atten'+start_time+'.pt')
+                torch.save(input_encoder.state_dict(), 'input_encoder'+start_time+'_'+output_note+'.pt')
+                torch.save(inter_atten.state_dict(), 'inter_atten'+start_time+'_'+output_note+'.pt')
            
             print('batches %d, train-loss %.3f, train-acc %.3f, dev-acc %.3f, best-dev-acc %.3f, grad-norm %.3f, para-norm %.3f' %
                   (i + 1, sum(losses) / len(losses), correct / total, dev_acc, best_acc, grad_norm, para_norm))
