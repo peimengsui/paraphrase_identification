@@ -17,7 +17,7 @@ import model
 from eval import test_model
 
 hidden_size = 200
-learning_rate = 0.01
+learning_rate = 0.05
 batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
@@ -28,8 +28,9 @@ ngram_pretrain = True
 path_encoder_pretrain = 'input_encoder_pretrain.pt'
 path_atten_pretrain = 'inter_atten_pretrain.pt'
 pretrain_embed_only = False
-pretrain = True
-output_note = 'basic'
+pretrain = False
+output_note = 'basic_fix_pad_accu'
+accu_value = 0.1
 
 
 def train(max_batch):
@@ -37,7 +38,12 @@ def train(max_batch):
 
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
+
+    # for padding
+    word_embeddings[1, :] = np.ones(300)
     word_embeddings = (word_embeddings.T / np.linalg.norm(word_embeddings, axis=1)).T
+    word_embeddings[1, :] = np.zeros(300)
+
     training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True, n=5)
     print('training set loaded')
     if use_ngram:
@@ -96,11 +102,11 @@ def train(max_batch):
     for group in input_optimizer.param_groups:
         for p in group['params']:
             state = input_optimizer.state[p]
-            state['sum'] += 0.1
+            state['sum'] += accu_value
     for group in inter_atten_optimizer.param_groups:
         for p in group['params']:
             state = inter_atten_optimizer.state[p]
-            state['sum'] += 0.1
+            state['sum'] += accu_value
 
     criterion = nn.BCEWithLogitsLoss()
 
