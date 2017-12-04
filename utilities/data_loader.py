@@ -147,31 +147,31 @@ def batch_iter(dataset, batch_size, use_ngram=False, shuffle=True):
             else:
                 question_1.append(k['question_1_tokens'])
                 question_2.append(k['question_2_tokens'])
-        max_length = max([len(question) for question in question_1] + [len(question) for question in question_2])
+        max_length_q1 = max([len(question) for question in question_1])
+        max_length_q2 = max([len(question) for question in question_2])
         if use_ngram:
             for question in question_1:
-                question.extend([[1]]*(max_length-len(question)))
+                question.extend([[1]]*(max_length_q1-len(question)))
                 for ngrams in question:
                     ngrams.extend([1]*(max_length_ngram-len(ngrams)))
             for question in question_2:
-                question.extend([[1]]*(max_length-len(question)))
+                question.extend([[1]]*(max_length_q2-len(question)))
                 for ngrams in question:
                     ngrams.extend([1]*(max_length_ngram-len(ngrams)))
         else:
             for question in question_1:
-                question.extend([1]*(max_length-len(question)))
+                question.extend([1]*(max_length_q1-len(question)))
             for question in question_2:
-                question.extend([1]*(max_length-len(question)))
+                question.extend([1]*(max_length_q2-len(question)))
+
         yield [judgement, question_1, question_2]
 
 
 if __name__ == '__main__':
     data_dir = '../data'
     vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
-    training_set = load_data(data_dir + '/dev.tsv', word_to_index_map)  # use dev set for faster test
-    x = batch_iter(training_set, 2)
+    dev_set = load_data(data_dir + '/dev.tsv', word_to_index_map)  # use dev set for faster test
+    x = batch_iter(dev_set, 2, shuffle=False)
     for item in x:
         print(item)
-        print([index_to_word_map[x] for x in item[1][0]])
-        print([index_to_word_map[x] for x in item[2][0]])
         break
