@@ -24,11 +24,11 @@ max_grad_norm = 5.0
 threshould = 0.5
 use_ngram = False
 use_shrinkage = False
-ngram_pretrain = True
 path_encoder_pretrain = 'input_encoder_pretrain.pt'
 path_atten_pretrain = 'inter_atten_pretrain.pt'
 pretrain_embed_only = False
 pretrain = False
+fix_embed = True
 output_note = 'basic_fix_pad_accu'
 accu_value = 0.1
 
@@ -68,16 +68,18 @@ def train(max_batch):
 
     if use_ngram:
         input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
-        input_encoder.load_state_dict(torch.load(path_encoder_pretrain))
-        print('model resumed from', path_encoder_pretrain)
+        if pretrain:
+            input_encoder.load_state_dict(torch.load(path_encoder_pretrain))
+            print('model resumed from', path_encoder_pretrain)
         if pretrain_embed_only:
             # copy pretrained embed and re-init other layers
             word_embeddings = input_encoder.embedding.weight.cpu().data.numpy()
             input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
             input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
-            print('use pretrained ngram embeddings')
-        if pretrain:
+            print('re-init layers')
+        if fix_embed:
             input_encoder.embedding.weight.requires_grad = False
+            print('fix embeddings')
 
     else:
         input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
