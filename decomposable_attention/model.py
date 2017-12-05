@@ -65,12 +65,13 @@ class encoder_char(nn.Module):
         '''
                sent: batch_size x length (Long tensor)
         '''
-        batch_size, question_len, ngram_len = sent1.size()
+        batch_size, question_len1, ngram_len1 = sent1.size()
+        batch_size, question_len2, ngram_len2 = sent2.size()
         sent1 = self.embedding(sent1.view(batch_size, -1))
         sent2 = self.embedding(sent2.view(batch_size, -1))
 
-        sent1 = sent1.view(batch_size, question_len, ngram_len, self.embedding_size).sum(dim=2)
-        sent2 = sent2.view(batch_size, question_len, ngram_len, self.embedding_size).sum(dim=2)
+        sent1 = sent1.view(batch_size, question_len1, ngram_len1, self.embedding_size).sum(dim=2)
+        sent2 = sent2.view(batch_size, question_len2, ngram_len2, self.embedding_size).sum(dim=2)
 
         sent1_linear = self.input_linear(sent1).view(
             batch_size, -1, self.hidden_size)
