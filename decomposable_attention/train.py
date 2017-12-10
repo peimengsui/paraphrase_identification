@@ -16,8 +16,9 @@ from utilities.data_loader import load_data, load_embed, batch_iter, add_char_ng
 import model
 from eval import test_model
 
+embedding_dim = 100
 hidden_size = 200
-learning_rate = 0.05
+learning_rate = 0.01
 batch_size = 64
 weight_decay = 5e-5
 max_grad_norm = 5.0
@@ -29,20 +30,22 @@ path_atten_pretrain = 'inter_atten_pretrain.pt'
 pretrain_embed_only = False
 pretrain = False
 fix_embed = True
-output_note = 'basic_fix_pad_accu'
-accu_value = 0.1
+output_note = 'ngram_mean'
+accu_value = 0.0
+normalize_embed = False
+embed_file = '/charNgram_mean.txt'
 
 
 def train(max_batch):
     start_time = datetime.now().strftime(r'%m%d_%H%M')
 
     data_dir = '../data'
-    vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + '/wordvec.txt')
+    vocabulary, word_embeddings, word_to_index_map, index_to_word_map = load_embed(data_dir + embed_file, embedding_dim=embedding_dim)
 
-    # for padding
-    word_embeddings[1, :] = np.ones(300)
-    word_embeddings = (word_embeddings.T / np.linalg.norm(word_embeddings, axis=1)).T
-    word_embeddings[1, :] = np.zeros(300)
+    if normalize_embed:
+        word_embeddings[1, :] = np.ones(embedding_dim)  # for padding
+        word_embeddings = (word_embeddings.T / np.linalg.norm(word_embeddings, axis=1)).T
+        word_embeddings[1, :] = np.zeros(embedding_dim)
 
     training_set = load_data(data_dir + '/train.tsv', word_to_index_map, add_reversed=True, n=5)
     print('training set loaded')
@@ -67,14 +70,14 @@ def train(max_batch):
     use_cuda = torch.cuda.is_available()
 
     if use_ngram:
-        input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+        input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=embedding_dim, hidden_size=hidden_size, para_init=0.01, padding_index=1)
         if pretrain:
             input_encoder.load_state_dict(torch.load(path_encoder_pretrain))
             print('model resumed from', path_encoder_pretrain)
         if pretrain_embed_only:
             # copy pretrained embed and re-init other layers
             word_embeddings = input_encoder.embedding.weight.cpu().data.numpy()
-            input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+            input_encoder = model.encoder_char(len(ngram_to_index_map.keys()), embedding_size=embedding_dim, hidden_size=hidden_size, para_init=0.01, padding_index=1)
             input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
             print('re-init layers')
         if fix_embed:
@@ -82,7 +85,7 @@ def train(max_batch):
             print('fix embeddings')
 
     else:
-        input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=300, hidden_size=hidden_size, para_init=0.01, padding_index=1)
+        input_encoder = model.encoder(word_embeddings.shape[0], embedding_size=embedding_dim, hidden_size=hidden_size, para_init=0.01, padding_index=1)
         input_encoder.embedding.weight.data.copy_(torch.from_numpy(word_embeddings))
         input_encoder.embedding.weight.requires_grad = False
 

@@ -86,9 +86,9 @@ def word_to_char_ngrams(word, n=5, max_len=15):
         return [tmp[i: i+n] for i in range(min(len(tmp)-n+1, max_len-n+1))]
 
 
-def load_embed(path):
+def load_embed(path, embedding_dim=300):
     vocabulary = [UNKNOWN, PADDING]
-    word_embeddings = [list(np.random.randn(300)), list(np.zeros(300))]
+    word_embeddings = [list(np.random.randn(embedding_dim)), list(np.zeros(embedding_dim))]
     word_to_index_map = {UNKNOWN: 0, PADDING: 1}
     index_to_word_map = {0: UNKNOWN, 1: PADDING}
     with open(path, encoding='utf-8') as f:
