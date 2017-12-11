@@ -116,32 +116,40 @@ def load_ngram_vocab(path):
     return vocabulary, ngram_to_index_map, index_to_ngram_map
 
 
-def batch_iter(dataset, batch_size, shuffle=True):
+def batch_iter(dataset, batch_size, shuffle=True, diff_len = True):
     # I suggest we set use_ngram this way so that you don't need to specify it outside, make it easier to reuse code for glove
     # Essentially if your object has ngrams in them, pretty much you want to use ngram
     use_ngram = 'question_1_ngrams' in dataset[0]
     start = -1 * batch_size
     dataset_size = len(dataset)
-    # Double check we do not mess up with test set
-    if dataset_size == 10000:
-        assert test_set[0]['pair_id'] == '50018'
-        assert test_set[5000]['pair_id'] == '330495'
-        assert test_set[-1]['pair_id'] == '334703'
     order = list(range(dataset_size))
     if shuffle:
         random.shuffle(order)
-
+    
+    # Double check we do not mess up with test set
+    if dataset_size == 10000:
+        assert shuffle == False
+    
     while True:
         start += batch_size
         judgement = []
         question_1 = []
         question_2 = []
-        if start > dataset_size - batch_size:
+        # Start over if we reach exactlt the last data point
+        if start == dataset_size:
+            start = batch_size
+            if shuffle:
+                random.shuffle(order)
+            batch_indices = order[:batch_size]
+        elif start > dataset_size - batch_size:
+            # Add this so that we won't miss some test samples at the very end
+            batch_indices = order[start:]
             # Start another epoch.
             start = 0
             if shuffle:
                 random.shuffle(order)
-        batch_indices = order[start:start + batch_size]
+        else:
+            batch_indices = order[start:start + batch_size]
         batch = [dataset[index] for index in batch_indices]
         max_length_ngram = 0
         for k in batch:
@@ -157,6 +165,9 @@ def batch_iter(dataset, batch_size, shuffle=True):
                 question_2.append(k['question_2_tokens'])
         max_length_q1 = max([len(question) for question in question_1])
         max_length_q2 = max([len(question) for question in question_2])
+        if not diff_len:
+            max_length_q2 = max(max_length_q1, max_length_q2)
+            max_length_q1 = max(max_length_q1, max_length_q2)
         if use_ngram:
             for question in question_1:
                 question.extend([[1]]*(max_length_q1-len(question)))

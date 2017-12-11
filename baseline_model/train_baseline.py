@@ -38,13 +38,13 @@ args = parser.parse_args()
 vocabulary, word_embeddings, word2id, id2word = load_embed(args.data_dir + args.embed_file, embedding_dim = args.emb_dim)
 train_set = load_data(args.data_dir + args.train_file, word2id, add_reversed=True, n=args.n_gram)
 valid_set = load_data(args.data_dir + args.valid_file, word2id, add_reversed=True, n=args.n_gram)
-test_set = load_data(args.data_dir + args.test_file, word2id, n=args.n_gram)
+test_set = load_data(args.data_dir + args.test_file, word2id, add_reversed=False, n=args.n_gram)
 vocab_size = len(id2word)
 
 
-train_batches = batch_iter(train_set, args.batch_size, shuffle=True)
-valid_batches = batch_iter(valid_set, args.batch_size * 10, shuffle=True)
-test_batches = batch_iter(test_set, args.test_size, shuffle=False)
+train_batches = batch_iter(train_set, args.batch_size, shuffle=True, diff_len = False)
+valid_batches = batch_iter(valid_set, args.batch_size * 10, shuffle=True, diff_len = False)
+test_batches = batch_iter(test_set, args.test_size, shuffle=False, diff_len = False)
 
 def set_cuda(var):
     if torch.cuda.is_available():
@@ -60,6 +60,7 @@ if not args.fine_tune:
     model.embedding.weight.requires_grad = False
 
 model = set_cuda(model)
+model.train()
 
 if args.resume_model is not None:
     model.load_state_dict(torch.load(args.resume_model))
@@ -93,6 +94,7 @@ for train_batch in train_batches:
         acc = float(correct / total)
         print('Training: step: %d, avg loss: %.3f, acc: %.3f' % (step, loss.data[0], acc))
     if step % args.val_step == 0:
+        model.eval()
         labels, sents1, sents2 = next(valid_batches)
         labels = set_cuda(Variable(torch.LongTensor(labels)))
         sents1 = set_cuda(Variable(torch.LongTensor(sents1)))
@@ -107,9 +109,12 @@ for train_batch in train_batches:
         if acc > best_acc:
             best_acc = acc
             torch.save(model.state_dict(), 'baseline.pt')
+
+        model.train()
 # Final test on the whole test set
 acc = []
-for i in range(len(test_set) / args.test_size):
+model.eval()
+for i in range(len(test_set) // args.test_size + 1):
     labels, sents1, sents2 = next(test_batches)
     labels = set_cuda(Variable(torch.LongTensor(labels)))
     sents1 = set_cuda(Variable(torch.LongTensor(sents1)))
@@ -120,7 +125,7 @@ for i in range(len(test_set) / args.test_size):
     acc += (predicts == labels.data).tolist()
 
 print('Test loss: %.3f, test acc: %.3f' % (loss.data[0], np.mean(acc)))
-f = open('acc_record.pkl','wb')
+f = open('acc_record_'+ args.embed_file[:-4] +'.pkl','wb')
 pkl.dump(acc, f)
 f.close()
         
