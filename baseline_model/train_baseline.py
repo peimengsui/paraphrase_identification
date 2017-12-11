@@ -24,7 +24,7 @@ parser.add_argument("--n_gram", type=int, default=0, help='n for n_gram')
 parser.add_argument("--rpt_step", type=int, default=1000, help='Report training loss and accuracy every n step')
 parser.add_argument("--val_step", type=int, default=10000, help='Report valid loss and accuracy every n step')
 parser.add_argument("--resume_model", type=str, default=None, help='File name of model to resume')
-parser.add_argument("--num_step", type=int, default=500000, help='Total number of step for training')
+parser.add_argument("--num_step", type=int, default=10000000, help='Total number of step for training')
 parser.add_argument("--batch_size", type=int, default=32, help='Batch size for training')
 parser.add_argument("--test_size", type=int, default=200, help='Batch size for testing')
 parser.add_argument("--lr", type=float, default=0.05, help='Learning rate')
@@ -38,14 +38,13 @@ args = parser.parse_args()
 vocabulary, word_embeddings, word2id, id2word = load_embed(args.data_dir + args.embed_file, embedding_dim = args.emb_dim)
 train_set = load_data(args.data_dir + args.train_file, word2id, add_reversed=True, n=args.n_gram)
 valid_set = load_data(args.data_dir + args.valid_file, word2id, add_reversed=True, n=args.n_gram)
-test_set = load_data(args.data_dir + args.test_file, word2id, add_reversed=True, n=args.n_gram)
+test_set = load_data(args.data_dir + args.test_file, word2id, n=args.n_gram)
 vocab_size = len(id2word)
 
 
-train_batches = batch_iter(train_set, args.batch_size, use_ngram = False, shuffle=False)
-valid_batches = batch_iter(valid_set, args.batch_size * 10, use_ngram = False, shuffle=False)
-# Test on the whole dataset
-test_batches = batch_iter(test_set, args.test_size, use_ngram = False, shuffle=False)
+train_batches = batch_iter(train_set, args.batch_size, shuffle=True)
+valid_batches = batch_iter(valid_set, args.batch_size * 10, shuffle=True)
+test_batches = batch_iter(test_set, args.test_size, shuffle=False)
 
 def set_cuda(var):
     if torch.cuda.is_available():
@@ -53,8 +52,10 @@ def set_cuda(var):
     return var
 
 model = baseline(vocab_size, args.emb_dim, args.hid_dim)
-# Initialize and fix word embedding with glove vector
-model.embedding.weight.data.copy_(torch.FloatTensor(word_embeddings))
+# Initialize with pre-trained word_embedding. Otherwise train wordembedding from scratch
+if args.embed_file is not None:
+    model.embedding.weight.data.copy_(torch.FloatTensor(word_embeddings))
+
 if not args.fine_tune:
     model.embedding.weight.requires_grad = False
 
@@ -106,11 +107,9 @@ for train_batch in train_batches:
         if acc > best_acc:
             best_acc = acc
             torch.save(model.state_dict(), 'baseline.pt')
-# Final test
+# Final test on the whole test set
 acc = []
-# Make sure we do not mess up testset
-assert test_set[0]['question_1'] == 'what should i do to avoid sleeping in class ?'
-for i in range(len(test_set / args.test_size)):
+for i in range(len(test_set) / args.test_size):
     labels, sents1, sents2 = next(test_batches)
     labels = set_cuda(Variable(torch.LongTensor(labels)))
     sents1 = set_cuda(Variable(torch.LongTensor(sents1)))
