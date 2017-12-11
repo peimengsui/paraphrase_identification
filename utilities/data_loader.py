@@ -116,10 +116,8 @@ def load_ngram_vocab(path):
     return vocabulary, ngram_to_index_map, index_to_ngram_map
 
 
-def batch_iter(dataset, batch_size, shuffle=True, diff_len = True):
-    # I suggest we set use_ngram this way so that you don't need to specify it outside, make it easier to reuse code for glove
-    # Essentially if your object has ngrams in them, pretty much you want to use ngram
-    use_ngram = 'question_1_ngrams' in dataset[0]
+def batch_iter(dataset, batch_size, shuffle=True, diff_len=True):
+    use_ngram = False
     start = -1 * batch_size
     dataset_size = len(dataset)
     order = list(range(dataset_size))
