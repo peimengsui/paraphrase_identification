@@ -37,5 +37,3 @@ The SentenceMatchDecoder.py can run in two modes:
 * prediction: predicting the label for each sentence pair
 * probs: outputting probabilities of all labels for each sentence pair
 
-## Reporting issues
-Please let [me](https://zhiguowang.github.io/) know, if you encounter any problems.
