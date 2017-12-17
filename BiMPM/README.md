@@ -1,11 +1,11 @@
 # BiMPM: Bilateral Multi-Perspective Matching for Natural Language Sentences
 
-## Most content of this directory is forked from this [repo] https://arxiv.org/pdf/1702.03814.pdf.
+## Most content of this directory is forked from this [repo](https://arxiv.org/pdf/1702.03814.pdf).
 
 ## Description
 This directory includes the source code for natural language sentence matching. 
-Basically, the program will take two sentences as input, and predict a label for the two input sentences. 
-You can use this program to deal with tasks like [paraphrase identification](https://aclweb.org/aclwiki/index.php?title=Paraphrase_Identification_%28State_of_the_art%29), [natural language inference](http://nlp.stanford.edu/projects/snli/), [duplicate questions identification](https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs) et al.
+Basically, the program will take two sentences as input, and predict a label for the two input sentences.
+
 
 ## Requirements
 * python 2.7
