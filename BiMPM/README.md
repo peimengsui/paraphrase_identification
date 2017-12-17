@@ -1,20 +1,15 @@
-# BiMPM: Bilateral Multi-Perspective Matching for Natural Language Sentences, most content of this directory is forked from https://github.com/zhiguowang/BiMPM.
+# BiMPM: Bilateral Multi-Perspective Matching for Natural Language Sentences
+
+## Most content of this directory is forked from https://github.com/zhiguowang/BiMPM.
 
 ## Description
 This directory includes the source code for natural language sentence matching. 
 Basically, the program will take two sentences as input, and predict a label for the two input sentences. 
-You can use this program to deal with tasks like [paraphrase identification](https://aclweb.org/aclwiki/index.php?title=Paraphrase_Identification_%28State_of_the_art%29), [natural language inference](http://nlp.stanford.edu/projects/snli/), [duplicate questions identification](https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs) et al. More details about the underneath model can be found in our [paper](https://arxiv.org/pdf/1702.03814.pdf). Please cite our paper when you use this program! :heart_eyes:
+You can use this program to deal with tasks like [paraphrase identification](https://aclweb.org/aclwiki/index.php?title=Paraphrase_Identification_%28State_of_the_art%29), [natural language inference](http://nlp.stanford.edu/projects/snli/), [duplicate questions identification](https://data.quora.com/First-Quora-Dataset-Release-Question-Pairs) et al.
 
 ## Requirements
 * python 2.7
 * tensorflow 0.12
-
-## Data format
-Both the train and test set require a tab-separated format.
-Each line in the train (or test) file corresponds to an instance, and it should be arranged as
-> label	sentence#1	sentence#2	other_info
-
-For more details about the data format, you can download the [Quora Question Pair](https://drive.google.com/file/d/0B0PlTAo--BnaQWlsZl9FZ3l1c28/view?usp=sharing) dataset used in our [paper](https://arxiv.org/pdf/1702.03814.pdf).
 
 
 ## Training
