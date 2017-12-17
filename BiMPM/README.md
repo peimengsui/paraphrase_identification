@@ -1,6 +1,6 @@
 # BiMPM: Bilateral Multi-Perspective Matching for Natural Language Sentences
 
-## Most content of this directory is forked from https://github.com/zhiguowang/BiMPM.
+## Most content of this directory is forked from this [repo] https://arxiv.org/pdf/1702.03814.pdf.
 
 ## Description
 This directory includes the source code for natural language sentence matching. 
