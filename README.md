@@ -1,4 +1,4 @@
-# paraphrase_identification
+# An Empirical Exploration of Paraphrase Detection, course project of DS-GA 1011
 
 ## Data format
 Both the train and test set require a tab-separated format.
